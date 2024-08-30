@@ -50,7 +50,7 @@ export async function syncShapeToTable(
       console.log("sync messages received", messages)
     }
 
-    const dlmStmts: Statement[] = []
+    const dmlStmts: Statement[] = []
     for (const message of messages) {
       const stmt = mapMessageToDMLStmt({
         rawMessage: message,
@@ -61,12 +61,12 @@ export async function syncShapeToTable(
         debug,
       })
       if (stmt) {
-        dlmStmts.push(stmt)
+        dmlStmts.push(stmt)
       }
     }
 
     await db.runInTransaction(
-      ...dlmStmts,
+      ...dmlStmts,
       // cache the offset and shape id
       cacheShapeInfo(stream, options)
     )
