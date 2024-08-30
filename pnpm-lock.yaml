@@ -420,7 +420,7 @@ importers:
         version: 0.3.4
       tsup:
         specifier: ^8.0.1
-        version: 8.2.0(@swc/core@1.7.0(@swc/helpers@0.5.5))(jiti@1.21.6)(postcss@8.4.41)(typescript@5.5.3)(yaml@2.4.5)
+        version: 8.2.0(@swc/core@1.7.0)(jiti@1.21.6)(postcss@8.4.41)(typescript@5.5.3)(yaml@2.4.5)
       typescript:
         specifier: ^5.5.2
         version: 5.5.3
@@ -560,7 +560,7 @@ importers:
         version: link:../../packages/typescript-client
       '@electric-sql/drivers':
         specifier: 0.0.2-canary.af6a7be
-        version: 0.0.2-canary.af6a7be(pg@8.12.0)
+        version: 0.0.2-canary.af6a7be(pg@8.12.0)(wa-sqlite@https://codeload.github.com/rhashimoto/wa-sqlite/tar.gz/6dbe4f044502a7a285e815896f56304a808fe25b)
       '@electric-sql/react':
         specifier: workspace:*
         version: link:../../packages/react-hooks
@@ -591,6 +591,9 @@ importers:
       uuid:
         specifier: ^10.0.0
         version: 10.0.0
+      wa-sqlite:
+        specifier: rhashimoto/wa-sqlite#semver:^0.9.8
+        version: https://codeload.github.com/rhashimoto/wa-sqlite/tar.gz/6dbe4f044502a7a285e815896f56304a808fe25b
       zod:
         specifier: ^3.23.8
         version: 3.23.8
@@ -718,7 +721,7 @@ importers:
         version: 0.3.4
       tsup:
         specifier: ^8.0.1
-        version: 8.2.0(@swc/core@1.7.0(@swc/helpers@0.5.5))(jiti@1.21.6)(postcss@8.4.41)(typescript@5.5.3)(yaml@2.4.5)
+        version: 8.2.0(@swc/core@1.7.0)(jiti@1.21.6)(postcss@8.4.41)(typescript@5.5.3)(yaml@2.4.5)
       typescript:
         specifier: ^5.5.2
         version: 5.5.3
@@ -778,7 +781,7 @@ importers:
         version: 0.3.4
       tsup:
         specifier: ^8.0.1
-        version: 8.2.0(@swc/core@1.7.0(@swc/helpers@0.5.5))(jiti@1.21.6)(postcss@8.4.41)(typescript@5.5.3)(yaml@2.4.5)
+        version: 8.2.0(@swc/core@1.7.0)(jiti@1.21.6)(postcss@8.4.41)(typescript@5.5.3)(yaml@2.4.5)
       typescript:
         specifier: ^5.5.2
         version: 5.5.3
@@ -1210,6 +1213,7 @@ packages:
 
   '@electric-sql/drivers@0.0.2-canary.af6a7be':
     resolution: {integrity: sha512-o7JLxrEZ+v0K8OF4xkuTxeCjN+3WhZNaXYbZ7G1ca/K6KCG/RXm4h3bt/iiiFpLnBhPKLZEXTDP4SHQFBqKDfA==}
+    version: 0.0.2-canary.af6a7be
     peerDependencies:
       '@capacitor-community/sqlite': '>= 5.6.2'
       '@electric-sql/pglite': '>= 0.1.5'
@@ -8395,6 +8399,10 @@ packages:
     resolution: {integrity: sha512-o8qghlI8NZHU1lLPrpi2+Uq7abh4GGPpYANlalzWxyWteJOCsr/P+oPBA49TOLu5FTZO4d3F9MnWJfiMo4BkmA==}
     engines: {node: '>=18'}
 
+  wa-sqlite@https://codeload.github.com/rhashimoto/wa-sqlite/tar.gz/6dbe4f044502a7a285e815896f56304a808fe25b:
+    resolution: {tarball: https://codeload.github.com/rhashimoto/wa-sqlite/tar.gz/6dbe4f044502a7a285e815896f56304a808fe25b}
+    version: 0.9.14
+
   wcwidth@1.0.1:
     resolution: {integrity: sha512-XHPEwS0q6TaxcvG85+8EYkbiCux2XtWG2mkc47Ng2A77BQu9+DqIOJldST4HgPkuea7dvKSj5VgX3P1d4rW8Tg==}
 
@@ -9294,11 +9302,12 @@ snapshots:
     transitivePeerDependencies:
       - '@algolia/client-search'
 
-  '@electric-sql/drivers@0.0.2-canary.af6a7be(pg@8.12.0)':
+  '@electric-sql/drivers@0.0.2-canary.af6a7be(pg@8.12.0)(wa-sqlite@https://codeload.github.com/rhashimoto/wa-sqlite/tar.gz/6dbe4f044502a7a285e815896f56304a808fe25b)':
     dependencies:
       async-mutex: 0.4.1
     optionalDependencies:
       pg: 8.12.0
+      wa-sqlite: https://codeload.github.com/rhashimoto/wa-sqlite/tar.gz/6dbe4f044502a7a285e815896f56304a808fe25b
 
   '@emotion/hash@0.9.2': {}
 
@@ -16752,7 +16761,7 @@ snapshots:
 
   tslib@2.6.3: {}
 
-  tsup@8.2.0(@swc/core@1.7.0(@swc/helpers@0.5.5))(jiti@1.21.6)(postcss@8.4.41)(typescript@5.5.3)(yaml@2.4.5):
+  tsup@8.2.0(@swc/core@1.7.0)(jiti@1.21.6)(postcss@8.4.41)(typescript@5.5.3)(yaml@2.4.5):
     dependencies:
       bundle-require: 5.0.0(esbuild@0.23.0)
       cac: 6.7.14
@@ -17204,6 +17213,8 @@ snapshots:
   w3c-xmlserializer@5.0.0:
     dependencies:
       xml-name-validator: 5.0.0
+
+  wa-sqlite@https://codeload.github.com/rhashimoto/wa-sqlite/tar.gz/6dbe4f044502a7a285e815896f56304a808fe25b: {}
 
   wcwidth@1.0.1:
     dependencies:

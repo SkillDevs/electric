@@ -1,24 +1,27 @@
-import {DatabaseAdapter, ElectricDatabase} from '@electric-sql/drivers/wa-sqlite'
-
+import {
+  DatabaseAdapter,
+  ElectricDatabase,
+} from "@electric-sql/drivers/wa-sqlite"
 
 export async function initDB() {
-  const dbName = 'myDB1';
-  const db = await ElectricDatabase.init(dbName);
+  const dbName = "myDB1"
+  const rawDb = await ElectricDatabase.init(dbName)
 
-  const rows = await db.exec({sql: 'PRAGMA user_version'});
-  const userVersion = rows[0][0] as number
+  const db = new DatabaseAdapter(rawDb)
 
-  console.log('DB VERSION', userVersion);
+  const rows = await db.query({ sql: "PRAGMA user_version" })
+  const userVersion = rows[0]["user_version"] as number
 
+  console.log("DB VERSION", userVersion)
 
   if (userVersion === 0) {
-    await db.exec({
+    await db.run({
       sql: `CREATE TABLE todos (
-                id INTEGER PRIMARY KEY, 
+                id TEXT PRIMARY KEY NOT NULL, 
                 title TEXT NOT NULL, 
                 completed INTEGER NOT NULL,
-				created_at INTEGER NOT NULL)`
-    });
+				        created_at INTEGER NOT NULL)`,
+    })
 
     // 						for (let i = 0; i < 1; i++) {
     // await sqlite3.exec(
@@ -26,8 +29,8 @@ export async function initDB() {
     //     0)`);
     // 						}
 
-    await db.exec({sql: `PRAGMA user_version = 1`})
+    await db.run({ sql: `PRAGMA user_version = 1` })
   }
 
-  return new DatabaseAdapter(db);
+  return db
 }

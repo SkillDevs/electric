@@ -21,6 +21,7 @@
     "react-router-dom": "^6.23.1",
     "uuid": "^10.0.0",
     "@electric-sql/drivers": "0.0.2-canary.af6a7be",
+    "wa-sqlite": "rhashimoto/wa-sqlite#semver:^0.9.8",
     "zod": "^3.23.8"
   },
   "devDependencies": {

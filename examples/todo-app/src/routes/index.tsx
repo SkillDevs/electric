@@ -59,14 +59,18 @@ function useTodos({ db }: { db: DatabaseAdapter }): ToDo[] {
     return () => clearInterval(id)
   }, [])
 
-  useEffect(() => {
+  useEffect(() => {    
     db.query({ sql: 'SELECT * FROM todos' }).then((rows) => {
+      // console.log("number of rows", rows.length);
+      
       setTodos(rows.map((row) => {
+        // console.log("row",row);
+        
         return {
-          id: row[0] as string,
-          title: row[1] as string,
-          completed: !!row[2],
-          created_at: row[3] as number,
+          id: row['id'] as string,
+          title: row['title'] as string,
+          completed: !!row['completed'],
+          created_at: row['created_at'] as number,
         }
       }))
 
