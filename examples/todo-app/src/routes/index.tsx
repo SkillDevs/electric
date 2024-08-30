@@ -9,6 +9,10 @@ import {
 } from "@radix-ui/themes"
 import { useShape } from "@electric-sql/react"
 import { v4 as uuidv4 } from "uuid"
+import { useEffect, useState } from 'react'
+import { initDB } from '../sqlite'
+import { DatabaseAdapter } from '@electric-sql/drivers/wa-sqlite';
+import { hookToElectric } from '../electric_sqlite'
 
 type ToDo = {
   id: string
@@ -18,11 +22,72 @@ type ToDo = {
 }
 
 export default function Index() {
-  const { data: todos } = useShape({
-    url: `http://localhost:3000/v1/shape/todos`,
-  }) as unknown as { data: ToDo[] }
+
+  const [db, setDb] = useState<DatabaseAdapter | null>(null)
+
+  useEffect(() => {
+    (async () => {
+      console.log("initializing db")
+      const db = await initDB()
+      
+      await hookToElectric(db)
+
+      setDb(db);
+      console.log("Initialized")
+      const todos = await db.query({ sql: 'SELECT * FROM todos' })
+      console.log(todos);
+
+    })();
+  }, [])
+
+  if (!db) {
+    return <div>initializing sqlite</div>
+  }
+
+  return <InnerIndex db={db} />
+
+}
+
+function useTodos({ db }: { db: DatabaseAdapter }): ToDo[] {
+  const [todos, setTodos] = useState<ToDo[]>([]);
+  const [counter, setCounter] = useState(0)
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setCounter((c) => c + 1)
+    }, 500)
+    return () => clearInterval(id)
+  }, [])
+
+  useEffect(() => {
+    db.query({ sql: 'SELECT * FROM todos' }).then((rows) => {
+      setTodos(rows.map((row) => {
+        return {
+          id: row[0] as string,
+          title: row[1] as string,
+          completed: !!row[2],
+          created_at: row[3] as number,
+        }
+      }))
+
+    })
+
+  }, [counter])
+
+  return todos
+}
+
+function InnerIndex({ db }: { db: DatabaseAdapter }) {
+  // const { data: todos } = useShape({
+  //   url: `http://localhost:3000/v1/shape/todos`,
+  // }) as unknown as { data: ToDo[] }
+
+  const todos = useTodos({ db })
+
   todos.sort((a, b) => a.created_at - b.created_at)
-  console.log({ todos })
+
+
+
   return (
     <Container size="1">
       <Flex gap="5" mt="5" direction="column">

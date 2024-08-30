@@ -13,6 +13,10 @@ export default defineConfig({
       // Pass in Capsize font metric objects.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       defaultFontStack: [alegreyaSans as any, arial as any],
+      
     }),
   ],
+  optimizeDeps: {
+    exclude: ['wa-sqlite'],
+  },
 })

@@ -29,11 +29,9 @@ const router = createBrowserRouter([
 
 async function render() {
   ReactDOM.createRoot(document.getElementById(`root`)!).render(
-    <React.StrictMode>
       <Theme accentColor="indigo">
         <RouterProvider router={router} />
       </Theme>
-    </React.StrictMode>
   )
 }
 
