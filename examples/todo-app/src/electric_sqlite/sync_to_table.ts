@@ -52,7 +52,7 @@ export async function syncShapeToTable(
 
     const dlmStmts: Statement[] = []
     for (const message of messages) {
-      const stmt = applyMessageToTable({
+      const stmt = mapMessageToDMLStmt({
         rawMessage: message,
         table: options.table,
         schema: options.schema,
@@ -124,7 +124,7 @@ interface ApplyMessageToTableOptions {
   debug: boolean
 }
 
-function applyMessageToTable({
+function mapMessageToDMLStmt({
   table,
   schema = "main",
   rawMessage,
