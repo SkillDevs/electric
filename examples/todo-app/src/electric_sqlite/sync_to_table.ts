@@ -1,6 +1,14 @@
-import { ChangeMessage, ShapeStreamOptions, ShapeStream, Message } from "@electric-sql/client"
-import { DatabaseAdapter, UncoordinatedDatabaseAdapter } from "@electric-sql/drivers"
-
+import {
+  ChangeMessage,
+  ShapeStreamOptions,
+  ShapeStream,
+  Message,
+} from "@electric-sql/client"
+import {
+  DatabaseAdapter,
+} from "@electric-sql/drivers"
+import { electricShapesTable } from "./schema"
+import { Statement } from "@electric-sql/drivers/util"
 
 export type MapColumnsMap = Record<string, string>
 export type MapColumnsFn = (message: ChangeMessage<any>) => Record<string, any>
@@ -13,8 +21,6 @@ export interface SyncShapeToTableOptions extends ShapeStreamOptions {
 }
 
 export type TableStreamApi = Awaited<ReturnType<typeof syncShapeToTable>>
-
-
 
 const debug = true
 
@@ -38,23 +44,32 @@ export async function syncShapeToTable(
     ...options,
     signal: aborter.signal,
   })
+
   stream.subscribe(async (messages) => {
     if (debug) {
       console.log("sync messages received", messages)
     }
+
+    const dlmStmts: Statement[] = []
     for (const message of messages) {
-      db.runExclusively(async (tx) => {
-        await applyMessageToTable({
-          db: tx,
-          rawMessage: message,
-          table: options.table,
-          schema: options.schema,
-          mapColumns: options.mapColumns,
-          primaryKey: options.primaryKey,
-          debug,
-        })
+      const stmt = applyMessageToTable({
+        rawMessage: message,
+        table: options.table,
+        schema: options.schema,
+        mapColumns: options.mapColumns,
+        primaryKey: options.primaryKey,
+        debug,
       })
+      if (stmt) {
+        dlmStmts.push(stmt)
+      }
     }
+
+    await db.runInTransaction(
+      ...dlmStmts,
+      // cache the offset and shape id
+      cacheShapeInfo(stream, options)
+    )
   })
   streams.push({
     stream,
@@ -101,7 +116,6 @@ function doMapColumns(
 }
 
 interface ApplyMessageToTableOptions {
-  db: UncoordinatedDatabaseAdapter
   table: string
   schema?: string
   rawMessage: Message
@@ -110,16 +124,16 @@ interface ApplyMessageToTableOptions {
   debug: boolean
 }
 
-async function applyMessageToTable({
-  db,
+function applyMessageToTable({
   table,
   schema = "main",
   rawMessage,
   mapColumns,
   primaryKey,
   debug,
-}: ApplyMessageToTableOptions) {
-  if (!(rawMessage as any).headers.operation) return
+}: ApplyMessageToTableOptions): Statement | undefined {
+  if (!(rawMessage as any).headers.operation) return undefined
+
   const message = rawMessage as ChangeMessage<any>
   const data = mapColumns ? doMapColumns(mapColumns, message) : message.value
   if (message.headers.operation === "insert") {
@@ -127,7 +141,7 @@ async function applyMessageToTable({
       console.log("inserting", data)
     }
     const columns = Object.keys(data)
-    await db.run({
+    return {
       sql: `
         INSERT INTO "${schema}"."${table}"
         (${columns.map((s) => '"' + s + '"').join(", ")})
@@ -135,7 +149,7 @@ async function applyMessageToTable({
         (${columns.map((_v, i) => "$" + (i + 1)).join(", ")})
       `,
       args: columns.map((column) => data[column]),
-    })
+    }
   } else if (message.headers.operation === "update") {
     if (debug) {
       console.log("updating", data)
@@ -144,33 +158,60 @@ async function applyMessageToTable({
       // we don't update the primary key, they are used to identify the row
       (column) => !primaryKey.includes(column)
     )
-    await db.run({
-      sql: `
+    if (columns.length > 0) {
+      return {
+        sql: `
         UPDATE "${schema}"."${table}"
         SET ${columns
           .map((column, i) => '"' + column + '" = $' + (i + 1))
           .join(", ")}
-        WHERE ${primaryKey
-          .map((column, i) => '"' + column + '" = $' + (columns.length + i + 1))
-          .join(" AND ")}
-      `,
-      args: [
-        ...columns.map((column) => data[column]),
-        ...primaryKey.map((column) => data[column]),
-      ],
-    })
+          WHERE ${primaryKey
+            .map(
+              (column, i) => '"' + column + '" = $' + (columns.length + i + 1)
+            )
+            .join(" AND ")}
+            `,
+        args: [
+          ...columns.map((column) => data[column]),
+          ...primaryKey.map((column) => data[column]),
+        ],
+      }
+    }
   } else if (message.headers.operation === "delete") {
     if (debug) {
       console.log("deleting", data)
     }
-    await db.query({
+    return {
       sql: `
-        DELETE FROM "${schema}"."${table}"
-        WHERE ${primaryKey
-          .map((column, i) => '"' + column + '" = $' + (i + 1))
-          .join(" AND ")}
-      `,
+            DELETE FROM "${schema}"."${table}"
+            WHERE ${primaryKey
+              .map((column, i) => '"' + column + '" = $' + (i + 1))
+              .join(" AND ")}
+          `,
       args: [...primaryKey.map((column) => data[column])],
-    })
+    }
+  }
+
+  throw new Error("Unknown operation " + message.headers.operation)
+}
+
+function cacheShapeInfo(
+  stream: ShapeStream,
+  options: SyncShapeToTableOptions
+): Statement {
+  // @ts-ignore - this is incorrectly marked as private
+  const lastOffset = stream.lastOffset
+
+  // store the offset
+  console.log("storing offset", lastOffset, "and shapeId", stream.shapeId)
+
+  return {
+    sql: `
+    INSERT OR REPLACE INTO ${electricShapesTable}
+    (tablename, offset, shape_id)
+    VALUES
+    (?, ?, ?)
+    `,
+    args: [options.table, lastOffset, stream.shapeId],
   }
 }

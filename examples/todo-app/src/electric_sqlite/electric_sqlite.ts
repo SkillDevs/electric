@@ -1,8 +1,15 @@
-import { ShapeStream } from "@electric-sql/client"
+import { Offset, ShapeStream } from "@electric-sql/client"
 import { DatabaseAdapter } from "@electric-sql/drivers/wa-sqlite"
 import { syncShapeToTable, TableStreamApi } from "./sync_to_table"
+import {
+  electricMetaTable,
+  electricShapesTable,
+  initElectricSchema,
+} from "./schema"
 
 export async function hookToElectric(db: DatabaseAdapter) {
+  await initElectricSchema(db)
+
   const sqliteTables = ["todos"]
 
   const streams: Array<{
@@ -15,10 +22,23 @@ export async function hookToElectric(db: DatabaseAdapter) {
   const baseUrl = "http://localhost:3000/v1/shape"
 
   for (const sqliteTable of sqliteTables) {
+    const cachedShapeInfo = await getCachedShapeInfo(db, sqliteTable)
+
+    console.log(
+      "Start shape stream for table",
+      sqliteTable,
+      "with offset",
+      cachedShapeInfo?.offset ?? "-1",
+      "and shapeId",
+      cachedShapeInfo?.shapeId
+    )
+
     const tableStreamApi = await syncShapeToTable(streams, db, {
       url: `${baseUrl}/${sqliteTable}`,
       table: sqliteTable,
       primaryKey: ["id"],
+      offset: cachedShapeInfo?.offset ?? "-1",
+      shapeId: cachedShapeInfo?.shapeId,
       mapColumns: (message) => {
         const data = message.value
 
@@ -38,7 +58,7 @@ export async function hookToElectric(db: DatabaseAdapter) {
           })
         )
 
-        console.log(data, newData)
+        // console.log(data, newData)
 
         return newData
       },
@@ -52,5 +72,29 @@ export async function hookToElectric(db: DatabaseAdapter) {
       stream.unsubscribeAll()
       aborter.abort()
     }
+  }
+}
+
+type TableShapeInfo = {
+  offset: Offset
+  shapeId: string
+}
+
+async function getCachedShapeInfo(
+  db: DatabaseAdapter,
+  table: string
+): Promise<TableShapeInfo | undefined> {
+  const rows = await db.query({
+    sql: `SELECT * FROM ${electricShapesTable} WHERE tablename = ?`,
+    args: [table],
+  })
+
+  if (rows.length === 0) {
+    return undefined
+  }
+
+  return {
+    offset: rows[0].offset as Offset,
+    shapeId: rows[0].shape_id as string,
   }
 }
