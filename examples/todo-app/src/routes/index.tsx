@@ -12,7 +12,7 @@ import { v4 as uuidv4 } from "uuid"
 import { useEffect, useState } from 'react'
 import { initDB } from '../sqlite'
 import { DatabaseAdapter } from '@electric-sql/drivers/wa-sqlite';
-import { hookToElectric } from '../electric_sqlite'
+import { hookToElectric } from "../electric_sqlite/electric_sqlite"
 
 type ToDo = {
   id: string

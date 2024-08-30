@@ -1,17 +1,6 @@
-import {
-  ChangeMessage,
-  Message,
-  ShapeStream,
-  ShapeStreamOptions,
-} from "@electric-sql/client"
-import {
-  Transaction,
-  UncoordinatedDatabaseAdapter,
-} from "@electric-sql/drivers"
-import {
-  DatabaseAdapter,
-  ElectricDatabase,
-} from "@electric-sql/drivers/wa-sqlite"
+import { ChangeMessage, ShapeStreamOptions, ShapeStream, Message } from "@electric-sql/client"
+import { DatabaseAdapter, UncoordinatedDatabaseAdapter } from "@electric-sql/drivers"
+
 
 export type MapColumnsMap = Record<string, string>
 export type MapColumnsFn = (message: ChangeMessage<any>) => Record<string, any>
@@ -23,64 +12,13 @@ export interface SyncShapeToTableOptions extends ShapeStreamOptions {
   primaryKey: string[]
 }
 
-type TableStreamApi = Awaited<ReturnType<typeof syncShapeToTable>>
+export type TableStreamApi = Awaited<ReturnType<typeof syncShapeToTable>>
 
-export async function hookToElectric(db: DatabaseAdapter) {
-  const sqliteTables = ["todos"]
 
-  const streams: Array<{
-    stream: ShapeStream
-    aborter: AbortController
-  }> = []
-
-  const tableToApi: Map<string, TableStreamApi> = new Map()
-
-  const baseUrl = "http://localhost:3000/v1/shape"
-
-  for (const sqliteTable of sqliteTables) {
-    const tableStreamApi = await syncShapeToTable(streams, db, {
-      url: `${baseUrl}/${sqliteTable}`,
-      table: sqliteTable,
-      primaryKey: ["id"],
-      mapColumns: (message) => {
-        const data = message.value
-
-        const newData = Object.fromEntries(
-          Object.entries(data).map(([k, v]) => {
-            let newValue = v
-
-            if (typeof v == "boolean") {
-              newValue = v ? 1 : 0
-            }
-
-            if (k == "created_at") {
-              newValue = Date.parse(v as string)
-            }
-
-            return [k, newValue]
-          })
-        )
-
-        console.log(data, newData)
-
-        return newData
-      },
-    })
-
-    tableToApi.set(sqliteTable, tableStreamApi)
-  }
-
-  return () => {
-    for (const { stream, aborter } of streams) {
-      stream.unsubscribeAll()
-      aborter.abort()
-    }
-  }
-}
 
 const debug = true
 
-async function syncShapeToTable(
+export async function syncShapeToTable(
   streams: Array<{
     stream: ShapeStream
     aborter: AbortController
@@ -105,7 +43,7 @@ async function syncShapeToTable(
       console.log("sync messages received", messages)
     }
     for (const message of messages) {
-      db._runExclusively(async (tx) => {
+      db.runExclusively(async (tx) => {
         await applyMessageToTable({
           db: tx,
           rawMessage: message,
